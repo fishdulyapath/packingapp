@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:datetime_picker_formfield/datetime_picker_formfield.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -35,6 +37,7 @@ class _PackboxListState extends State<PackboxList> {
   String fromDate = "";
   String toDate = "";
   String status = "0";
+  final _debouncer = Debouncer(milliseconds: 1000);
   // String _barcode = "";
   @override
   void initState() {
@@ -125,10 +128,21 @@ class _PackboxListState extends State<PackboxList> {
                   builder: (context, state) {
                     return state.status == DoclistStateStatus.success
                         ? docList(context, state.doclist, 76)
-                        : Container(
-                            margin: EdgeInsets.only(top: 10),
-                            child: Text('ไม่พบข้อมูล'),
-                          );
+                        : state.status == DoclistStateStatus.inProcess
+                            ? Container(
+                                margin: EdgeInsets.only(top: 20),
+                                child: Text(
+                                  'กำลังประมวลผล',
+                                  style: TextStyle(
+                                      color: Colors.blueAccent, fontSize: 18),
+                                ),
+                              )
+                            : Container(
+                                margin: EdgeInsets.only(top: 10),
+                                child: Text('ไม่พบข้อมูล',
+                                    style: TextStyle(
+                                        color: Colors.red, fontSize: 18)),
+                              );
                   },
                 ),
                 Divider(height: 0, color: Colors.black26),
@@ -202,12 +216,12 @@ class _PackboxListState extends State<PackboxList> {
               ),
             ),
             onChanged: (keyword) {
-              Future.delayed(const Duration(milliseconds: 1000), () {
-                if (state.status != DoclistStateStatus.inProcess) {
-                  context.read<DoclistBloc>()
-                    ..add(DoclistLoaded(keyWord: keyword));
-                }
-              });
+              _debouncer.run(() => context.read<DoclistBloc>()
+                ..add(DoclistLoaded(
+                    fromDate: fromDate,
+                    toDate: toDate,
+                    status: status,
+                    keyWord: docNo.text)));
             },
           );
         },
@@ -240,16 +254,12 @@ class _PackboxListState extends State<PackboxList> {
                 });
               },
               onChanged: (keyword) {
-                Future.delayed(const Duration(milliseconds: 1000), () {
-                  if (state.status != DoclistStateStatus.inProcess) {
-                    context.read<DoclistBloc>()
-                      ..add(DoclistLoaded(
-                          fromDate: fromDate,
-                          toDate: toDate,
-                          status: status,
-                          keyWord: docNo.text));
-                  }
-                });
+                _debouncer.run(() => context.read<DoclistBloc>()
+                  ..add(DoclistLoaded(
+                      fromDate: fromDate,
+                      toDate: toDate,
+                      status: status,
+                      keyWord: docNo.text)));
               },
               decoration: InputDecoration(
                 labelText: fromDate == "" ? formattedDate : "จากวันที่",
@@ -295,16 +305,12 @@ class _PackboxListState extends State<PackboxList> {
                 });
               },
               onChanged: (keyword) {
-                Future.delayed(const Duration(milliseconds: 1000), () {
-                  if (state.status != DoclistStateStatus.inProcess) {
-                    context.read<DoclistBloc>()
-                      ..add(DoclistLoaded(
-                          fromDate: fromDate,
-                          toDate: toDate,
-                          keyWord: docNo.text,
-                          status: status));
-                  }
-                });
+                _debouncer.run(() => context.read<DoclistBloc>()
+                  ..add(DoclistLoaded(
+                      fromDate: fromDate,
+                      toDate: toDate,
+                      status: status,
+                      keyWord: docNo.text)));
               },
               decoration: InputDecoration(
                 labelText: toDate == "" ? formattedDate : "ถึงวันที่",
@@ -639,4 +645,16 @@ showAlertDialog(BuildContext context) {
       return alert;
     },
   );
+}
+
+class Debouncer {
+  final int milliseconds;
+  Timer? _timer;
+
+  Debouncer({required this.milliseconds});
+
+  run(VoidCallback action) {
+    _timer?.cancel();
+    _timer = Timer(Duration(milliseconds: milliseconds), action);
+  }
 }

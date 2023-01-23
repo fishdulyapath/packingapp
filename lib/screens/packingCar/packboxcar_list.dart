@@ -21,6 +21,7 @@ import 'package:mobilepacking/data/struct/product.dart';
 import 'package:mobilepacking/screens/login_page.dart';
 import 'package:mobilepacking/screens/main_menu.dart';
 import 'package:mobilepacking/screens/packingBox/packbox_detail.dart';
+import 'package:mobilepacking/screens/packingBox/packbox_list.dart';
 import 'package:mobilepacking/screens/packingBox/packboxconfirm.dart';
 import 'package:mobilepacking/screens/packingCar/packboxcar_detail.dart';
 import 'package:mobilepacking/widgets/bottom_app_bar.dart';
@@ -38,6 +39,7 @@ class _PackcarListState extends State<PackcarList> {
   bool _isFillter = false;
   String fromDate = "";
   String toDate = "";
+  final _debouncer = Debouncer(milliseconds: 1000);
   // String _barcode = "";
   @override
   void initState() {
@@ -126,10 +128,21 @@ class _PackcarListState extends State<PackcarList> {
                   builder: (context, state) {
                     return state.status == DoclistCarStateStatus.success
                         ? doclistCar(context, state.doclistCar, 76)
-                        : Container(
-                            margin: EdgeInsets.only(top: 10),
-                            child: Text('ไม่พบข้อมูล'),
-                          );
+                        : state.status == DoclistCarStateStatus.inProcess
+                            ? Container(
+                                margin: EdgeInsets.only(top: 20),
+                                child: Text(
+                                  'กำลังประมวลผล',
+                                  style: TextStyle(
+                                      color: Colors.blueAccent, fontSize: 18),
+                                ),
+                              )
+                            : Container(
+                                margin: EdgeInsets.only(top: 10),
+                                child: Text('ไม่พบข้อมูล',
+                                    style: TextStyle(
+                                        color: Colors.red, fontSize: 18)),
+                              );
                   },
                 ),
                 Divider(height: 0, color: Colors.black26),
@@ -162,12 +175,9 @@ class _PackcarListState extends State<PackcarList> {
               ),
             ),
             onChanged: (keyword) {
-              Future.delayed(const Duration(milliseconds: 1000), () {
-                if (state.status != DoclistCarStateStatus.inProcess) {
-                  context.read<DoclistCarBloc>()
-                    ..add(DoclistCarLoaded(keyWord: keyword));
-                }
-              });
+              _debouncer.run(() => context.read<DoclistCarBloc>()
+                ..add(DoclistCarLoaded(
+                    fromDate: fromDate, toDate: toDate, keyWord: docNo.text)));
             },
           );
         },
@@ -200,13 +210,11 @@ class _PackcarListState extends State<PackcarList> {
                 });
               },
               onChanged: (keyword) {
-                Future.delayed(const Duration(milliseconds: 1000), () {
-                  if (state.status != DoclistCarStateStatus.inProcess) {
-                    context.read<DoclistCarBloc>()
-                      ..add(
-                          DoclistCarLoaded(fromDate: fromDate, toDate: toDate));
-                  }
-                });
+                _debouncer.run(() => context.read<DoclistCarBloc>()
+                  ..add(DoclistCarLoaded(
+                      fromDate: fromDate,
+                      toDate: toDate,
+                      keyWord: docNo.text)));
               },
               decoration: InputDecoration(
                 labelText: fromDate == "" ? formattedDate : "จากวันที่",
@@ -252,13 +260,11 @@ class _PackcarListState extends State<PackcarList> {
                 });
               },
               onChanged: (keyword) {
-                Future.delayed(const Duration(milliseconds: 1000), () {
-                  if (state.status != DoclistCarStateStatus.inProcess) {
-                    context.read<DoclistCarBloc>()
-                      ..add(
-                          DoclistCarLoaded(fromDate: fromDate, toDate: toDate));
-                  }
-                });
+                _debouncer.run(() => context.read<DoclistCarBloc>()
+                  ..add(DoclistCarLoaded(
+                      fromDate: fromDate,
+                      toDate: toDate,
+                      keyWord: docNo.text)));
               },
               decoration: InputDecoration(
                 labelText: toDate == "" ? formattedDate : "ถึงวันที่",

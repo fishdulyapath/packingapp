@@ -21,6 +21,7 @@ import 'package:mobilepacking/data/struct/product.dart';
 import 'package:mobilepacking/screens/login_page.dart';
 import 'package:mobilepacking/screens/main_menu.dart';
 import 'package:mobilepacking/screens/packingBox/packbox_detail.dart';
+import 'package:mobilepacking/screens/packingBox/packbox_list.dart';
 import 'package:mobilepacking/screens/packingBox/packboxconfirm.dart';
 import 'package:mobilepacking/screens/packingCar/packboxcar_detail.dart';
 import 'package:mobilepacking/screens/packingSend/packsend_detail.dart';
@@ -39,6 +40,7 @@ class _PacksendListState extends State<PacksendList> {
   bool _isFillter = false;
   String fromDate = "";
   String toDate = "";
+  final _debouncer = Debouncer(milliseconds: 1000);
   // String _barcode = "";
   @override
   void initState() {
